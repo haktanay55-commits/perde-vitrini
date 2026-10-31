@@ -17,7 +17,11 @@ Fotoğraflar ve kayıtlar varsayılan olarak `Belgeler\Perde Vitrini` klasörün
 
 İki bilgisayar aynı verileri görsün istersen uygulamada **Ayarlar → Klasör değiştir** ile ortak bir klasör seç (ağ klasörü, Google Drive veya OneDrive klasörü).
 
-Yedek almak için bu klasörü kopyalamak yeterli.
+## Otomatik yedek
+
+**Ayarlar → Yedek klasörü seç** ile bir klasör seç (Google Drive / OneDrive klasörü, USB veya ağ klasörü). Uygulama her kayıttan sonra, kapanırken ve 6 saatte bir verileri `Perde Vitrini Yedek\<bilgisayar adı>` altına kopyalar. Her günün kaydı `gecmis` klasöründe ayrıca saklanır (son 60 gün).
+
+**Geri yükleme:** Uygulamayı kapat, yedekteki `data.json` dosyasını ve `photos` klasörünü veri klasörüne (`Belgeler\Perde Vitrini`) kopyala, uygulamayı aç. Daha eski bir güne dönmek için `gecmis` içindeki o günün dosyasını `data.json` adıyla kopyala.
 
 ## Yeni sürüm çıkarmak
 

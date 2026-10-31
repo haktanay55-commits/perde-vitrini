@@ -144,7 +144,7 @@ body{font-size:15px;-webkit-font-smoothing:antialiased}
       <button id="tab-m" role="tab" aria-selected="false" data-tab="m">Müşteri Ölçüleri</button>
     </nav>
     <div class="spacer"></div>
-    <button class="btn" id="setBtn" title="Ayarlar">Ayarlar</button>
+    <button class="btn" id="setBtn" title="Ayarlar">Ayarlar<span id="bkDot" hidden style="width:8px;height:8px;border-radius:50%;background:var(--danger)"></span></button>
     <button class="btn primary" id="addBtn">+ Fotoğraf ekle</button>
   </div>
 </header>
@@ -272,9 +272,23 @@ body{font-size:15px;-webkit-font-smoothing:antialiased}
       <div id="dirPath" style="font-family:var(--f-num);font-size:13px;word-break:break-all;margin-top:4px"></div>
     </div>
     <p class="note" style="margin:0">Fotoğraflar ve ölçü kayıtları bu klasörde durur. İki bilgisayar aynı verileri görsün istiyorsan ortak bir klasör seç (ağ klasörü veya Google Drive / OneDrive klasörü). Boş bir klasör seçersen mevcut veriler oraya kopyalanır.</p>
-    <div class="actions">
-      <button class="btn primary" type="button" id="chooseDir">Klasör değiştir</button>
+    <div class="actions" style="border-top:0;padding-top:0">
+      <button class="btn" type="button" id="chooseDir">Klasör değiştir</button>
       <button class="btn" type="button" id="openDir">Klasörü aç</button>
+    </div>
+    <div style="border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:10px">
+      <div class="win-head"><h3>Otomatik yedek</h3><span class="pill" id="bkPill"></span></div>
+      <div id="bkPath" style="font-family:var(--f-num);font-size:13px;word-break:break-all"></div>
+      <div class="note" id="bkLast"></div>
+      <div class="err" id="bkErr"></div>
+      <p class="note" style="margin:0">Her kayıttan sonra, kapanırken ve 6 saatte bir seçtiğin klasöre kopyalanır. Google Drive veya OneDrive klasörü seçersen yedek internete de çıkar. Her günün kaydı ayrıca saklanır (son 60 gün).</p>
+      <div class="actions" style="border-top:0;padding-top:0">
+        <button class="btn primary" type="button" id="bkChoose">Yedek klasörü seç</button>
+        <button class="btn" type="button" id="bkNow">Şimdi yedekle</button>
+        <button class="btn" type="button" id="bkOpen">Yedeği aç</button>
+      </div>
+    </div>
+    <div class="actions">
       <button class="btn" type="button" data-close>Kapat</button>
     </div>
   </div>

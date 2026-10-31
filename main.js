@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { pathToFileURL } = require("url");
+const os = require("os");
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "pv", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -67,11 +68,55 @@ function mutate(fn) {
   const d = load();
   fn(d);
   save(d);
+  scheduleBackup();
   return snapshot(d);
 }
 
 function snapshot(d = load()) {
-  return { ...d, dataDir };
+  return { ...d, dataDir, backup: backupInfo() };
+}
+
+/* ---------- automatic backup ---------- */
+// Copies data.json (one dated copy per day, last 60 kept) and any new photos into
+// <backupDir>/Perde Vitrini Yedek/<computer name>/. Photos are copied once, never re-copied.
+const backupRoot = (dir) => path.join(dir, "Perde Vitrini Yedek", os.hostname());
+
+function backupInfo() {
+  const c = readConfig();
+  return { dir: c.backupDir || "", lastAt: c.lastBackupAt || 0, error: c.lastBackupError || "" };
+}
+
+function runBackup() {
+  const c = readConfig();
+  if (!c.backupDir) return backupInfo();
+  try {
+    if (!fs.existsSync(c.backupDir)) throw new Error("Yedek klasörüne ulaşılamıyor: " + c.backupDir);
+    const root = backupRoot(c.backupDir);
+    const bPhotos = path.join(root, "photos");
+    const bHist = path.join(root, "gecmis");
+    fs.mkdirSync(bPhotos, { recursive: true });
+    fs.mkdirSync(bHist, { recursive: true });
+    for (const name of fs.readdirSync(photoDir())) {
+      const dst = path.join(bPhotos, name);
+      if (!fs.existsSync(dst)) fs.copyFileSync(path.join(photoDir(), name), dst);
+    }
+    fs.copyFileSync(dataFile(), path.join(root, "data.json"));
+    const day = new Date().toISOString().slice(0, 10);
+    fs.copyFileSync(dataFile(), path.join(bHist, `data-${day}.json`));
+    const hist = fs.readdirSync(bHist).filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
+    for (const old of hist.slice(0, Math.max(0, hist.length - 60))) fs.unlinkSync(path.join(bHist, old));
+    writeConfig({ ...readConfig(), lastBackupAt: Date.now(), lastBackupError: "" });
+  } catch (e) {
+    writeConfig({ ...readConfig(), lastBackupError: String(e.message || e) });
+  }
+  if (win && !win.isDestroyed()) win.webContents.send("backup", backupInfo());
+  return backupInfo();
+}
+
+let backupTimer = null;
+function scheduleBackup(ms = 20000) {
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(runBackup, ms);
 }
 
 function safeName(n) {
@@ -200,7 +245,33 @@ app.whenReady().then(() => {
 
   ipcMain.handle("openDataDir", () => shell.openPath(dataDir));
 
+  ipcMain.handle("chooseBackupDir", async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: "Yedeklerin gideceği klasörü seç (Google Drive, OneDrive, USB…)",
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (r.canceled || !r.filePaths[0]) return backupInfo();
+    const target = r.filePaths[0];
+    if (path.resolve(target).startsWith(path.resolve(dataDir))) {
+      dialog.showErrorBox("Klasör seçilemedi", "Yedek, veri klasörünün kendisine veya içine alınamaz. Başka bir yer seç.");
+      return backupInfo();
+    }
+    writeConfig({ ...readConfig(), backupDir: target, lastBackupError: "" });
+    return runBackup();
+  });
+  ipcMain.handle("backupNow", () => runBackup());
+  ipcMain.handle("openBackupDir", () => {
+    const c = readConfig();
+    if (c.backupDir) shell.openPath(fs.existsSync(backupRoot(c.backupDir)) ? backupRoot(c.backupDir) : c.backupDir);
+  });
+
   createWindow();
+  scheduleBackup(5000);
+  setInterval(runBackup, 6 * 60 * 60 * 1000);
 });
 
-app.on("window-all-closed", () => app.quit());
+app.on("window-all-closed", () => {
+  clearTimeout(backupTimer);
+  runBackup();
+  app.quit();
+});

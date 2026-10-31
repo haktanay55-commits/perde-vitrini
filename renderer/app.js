@@ -16,6 +16,7 @@ function apply(snap) {
   custs = snap.customers.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.createdAt - a.createdAt);
   dataDir = snap.dataDir;
   $("#dirPath").textContent = dataDir;
+  showBackup(snap.backup);
   renderGallery(); renderCusts();
 }
 async function reload() { try { apply(await window.api.load()); } catch (e) { toast("Veriler okunamadı"); } }
@@ -226,6 +227,23 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.q
 $("#setBtn").onclick = () => ($("#setSheet").hidden = false);
 $("#chooseDir").onclick = async () => { apply(await window.api.chooseDataDir()); toast("Veri klasörü güncellendi"); };
 $("#openDir").onclick = () => window.api.openDataDir();
+
+function showBackup(b) {
+  if (!b) return;
+  const ago = b.lastAt ? new Date(b.lastAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }) : "";
+  $("#bkPath").textContent = b.dir || "Yedek klasörü seçilmedi";
+  $("#bkLast").textContent = b.dir ? (ago ? "Son yedek: " + ago : "Henüz yedek alınmadı") : "";
+  $("#bkErr").textContent = b.error || "";
+  const ok = b.dir && !b.error;
+  $("#bkPill").textContent = ok ? "Açık" : b.error ? "Hata" : "Kapalı";
+  $("#bkPill").className = "pill " + (ok ? "s2" : "");
+  $("#bkDot").hidden = ok;
+  $("#bkNow").disabled = $("#bkOpen").disabled = !b.dir;
+}
+$("#bkChoose").onclick = async () => { showBackup(await window.api.chooseBackupDir()); };
+$("#bkNow").onclick = async () => { const b = await window.api.backupNow(); showBackup(b); toast(b.error ? "Yedek alınamadı" : "Yedek alındı"); };
+$("#bkOpen").onclick = () => window.api.openBackupDir();
+window.api.onBackup(showBackup);
 
 /* boot */
 let start = "g"; try { start = localStorage.getItem("pv-tab") || "g"; } catch (e) {}

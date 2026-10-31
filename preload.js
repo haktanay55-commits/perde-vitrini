@@ -11,5 +11,9 @@ contextBridge.exposeInMainWorld("api", {
   deleteCustomer: (id) => ipcRenderer.invoke("deleteCustomer", id),
   chooseDataDir: () => ipcRenderer.invoke("chooseDataDir"),
   openDataDir: () => ipcRenderer.invoke("openDataDir"),
+  chooseBackupDir: () => ipcRenderer.invoke("chooseBackupDir"),
+  backupNow: () => ipcRenderer.invoke("backupNow"),
+  openBackupDir: () => ipcRenderer.invoke("openBackupDir"),
   onChanged: (fn) => ipcRenderer.on("changed", fn),
+  onBackup: (fn) => ipcRenderer.on("backup", (_e, info) => fn(info)),
 });
