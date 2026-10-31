@@ -21,4 +21,4 @@ Yedek almak için bu klasörü kopyalamak yeterli.
 
 ## Yeni sürüm çıkarmak
 
-`package.json` içindeki `version` değerini artır, `v1.0.1` gibi bir etiket (tag) ile gönder. GitHub Actions kurulum dosyasını üretip Releases'a ekler.
+`package.json` içindeki `version` değerini artırıp `main` dalına gönder. GitHub Actions kurulum dosyasını üretip Releases'a ekler.
