@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' pv: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; script-src 'self'">
+<title>Perde Vitrini</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky top bar with two tabs; gallery = big photo grid + full-screen presenter; measurements = list + editor sheet */
+:root{
+  --bg:#f3f5f5; --surface:#ffffff; --sunk:#e7ecec; --line:#d4dcdc;
+  --fg:#16211f; --muted:#5b6b69; --accent:#1d5e66; --accent-fg:#ffffff; --accent-soft:#d9eaeb;
+  --danger:#b3361f; --ok:#2f7a45;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1515; --surface:#172020; --sunk:#1e2929; --line:#2c3a3a;
+  --fg:#e6eeed; --muted:#93a5a3; --accent:#5fb3bc; --accent-fg:#071313; --accent-soft:#1d3a3d;
+  --danger:#ee7a62; --ok:#6cc487; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1515; --surface:#172020; --sunk:#1e2929; --line:#2c3a3a;
+  --fg:#e6eeed; --muted:#93a5a3; --accent:#5fb3bc; --accent-fg:#071313; --accent-soft:#1d3a3d;
+  --danger:#ee7a62; --ok:#6cc487; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1400px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:12px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:8px}
+.brand small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+nav{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:999px}
+nav button{border:0;background:transparent;color:var(--muted);font:600 14px var(--f-body);padding:8px 18px;border-radius:999px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0/.12)}
+.spacer{flex:1}
+button,.btn{font:600 14px var(--f-body);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 16px;border-radius:8px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.btn.danger.solid{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding-block:20px 60px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 14px;border-radius:999px;font:500 14px var(--f-body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip .n{font-family:var(--f-num);font-size:12px;opacity:.6;margin-left:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.tile{position:relative;border:0;padding:0;background:var(--sunk);border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;cursor:zoom-in;max-width:100%}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.tile:hover img{transform:scale(1.03)}
+.tile .cap{position:absolute;inset:auto 0 0 0;padding:28px 12px 10px;background:linear-gradient(transparent,rgb(0 0 0/.65));color:#fff;text-align:left;font-size:13px}
+.tile .cat{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:48px 24px;text-align:center;color:var(--muted)}
+.empty h3{font-family:var(--f-display);color:var(--fg);font-size:20px;margin:0 0 6px}
+.note{color:var(--muted);font-size:13px}
+.err{color:var(--danger);font-size:14px}
+/* presenter */
+.lb{position:fixed;inset:0;z-index:50;background:#0b0f0f;color:#f2f5f5;display:grid;grid-template-rows:auto 1fr auto;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.lb-top,.lb-bot{display:flex;align-items:center;gap:12px;padding:12px 16px;flex-wrap:wrap}
+.lb-top .t{font-family:var(--f-display);font-size:20px}
+.lb-top .cat{font:600 12px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:#9fd0d5}
+.lb-stage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+.lb-stage img{max-width:100%;max-height:100%;object-fit:contain}
+.lb .nav{position:absolute;top:50%;transform:translateY(-50%);width:56px;height:56px;border-radius:50%;border:0;background:rgb(255 255 255/.12);color:#fff;font-size:26px;cursor:pointer}
+.lb .nav:hover{background:rgb(255 255 255/.25)}
+.lb .prev{left:16px}.lb .next{right:16px}
+.lb .lbtn{border:1px solid rgb(255 255 255/.25);background:transparent;color:#f2f5f5;padding:8px 14px;border-radius:8px}
+.lb .lbtn:hover{background:rgb(255 255 255/.1)}
+.lb .lbtn.del{color:#ff9f8a}
+.lb .count{font-family:var(--f-num);font-size:13px;opacity:.7}
+.strip{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0}
+.strip button{flex:0 0 72px;height:54px;border:2px solid transparent;border-radius:6px;padding:0;overflow:hidden;background:#222;opacity:.55;cursor:pointer}
+.strip button.on{border-color:#9fd0d5;opacity:1}
+.strip img{width:100%;height:100%;object-fit:cover}
+/* sheet */
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgb(0 0 0/.45);display:flex;justify-content:flex-end}
+.sheet{background:var(--surface);width:min(720px,100%);height:100%;overflow-y:auto;padding:24px max(20px,env(safe-area-inset-right,0px)) 40px 24px;display:flex;flex-direction:column;gap:18px}
+.sheet h2{font-family:var(--f-display);font-size:24px;margin:0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;min-width:0}
+input,select,textarea{font:400 15px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;text-transform:none;letter-spacing:0}
+textarea{resize:vertical;min-height:64px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.win-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.win-head h3{font-family:var(--f-display);font-size:18px;margin:0}
+.wins{display:flex;flex-direction:column;gap:10px}
+.win{display:grid;grid-template-columns:1.3fr .8fr .8fr 1.3fr auto;gap:8px;align-items:end;background:var(--sunk);padding:10px;border-radius:8px}
+.win input{background:var(--surface)}
+.win .num{font-family:var(--f-num)}
+.x{border:0;background:transparent;color:var(--muted);font-size:20px;width:36px;height:40px;cursor:pointer}
+.x:hover{color:var(--danger)}
+.win .wnote{grid-column:1/-1}
+@media (max-width:640px){.win{grid-template-columns:1fr 1fr}.win .x{grid-column:2;justify-self:end}}
+.sum{font-family:var(--f-num);font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:16px}
+/* customer list */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--sunk)}
+td.num{font-family:var(--f-num);font-size:13px;white-space:nowrap}
+.cname{font-weight:600}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.s1{background:var(--accent-soft);color:var(--accent)}
+.pill.s2{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.search{flex:1;min-width:200px;max-width:360px}
+.cph{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.cph .ph{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--sunk);max-width:100%}
+.cph .ph button.open{border:0;padding:0;width:100%;height:100%;cursor:zoom-in;background:transparent}
+.cph img{width:100%;height:100%;object-fit:cover;display:block}
+.cph .rm{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgb(0 0 0/.6);color:#fff;cursor:pointer;font-size:14px}
+.cph .addph{aspect-ratio:1;border:1.5px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;text-align:center;padding:8px}
+.cph .addph:hover{border-color:var(--accent);color:var(--accent)}
+.cph .addph input{position:absolute;width:1px;height:1px;opacity:0}
+.camtag{font-family:var(--f-num);font-size:12px;color:var(--accent);margin-left:6px}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:60;font-weight:600}
+.progress{font-family:var(--f-num);font-size:13px;color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.tile img{transition:none}}
+
+html,body{margin:0}
+[hidden]{display:none!important}
+#edSheet{z-index:55}
+img{max-width:100%}
+body{font-size:15px;-webkit-font-smoothing:antialiased}
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="wrap bar">
+    <div class="brand">Perde Vitrini <small>Evteks</small></div>
+    <nav role="tablist">
+      <button id="tab-g" role="tab" aria-selected="true" data-tab="g">Örnek İşler</button>
+      <button id="tab-m" role="tab" aria-selected="false" data-tab="m">Müşteri Ölçüleri</button>
+    </nav>
+    <div class="spacer"></div>
+    <button class="btn" id="setBtn" title="Ayarlar">Ayarlar</button>
+    <button class="btn primary" id="addBtn">+ Fotoğraf ekle</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="view-g">
+    <div class="toolbar"><div class="chips" id="chips"></div></div>
+    <div id="gstate"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section id="view-m" hidden>
+    <div class="toolbar">
+      <input id="q" class="search" type="search" placeholder="Müşteri adı, telefon veya adres ara">
+      <select id="fstat" style="width:auto"><option value="">Tüm durumlar</option></select>
+      <div class="spacer"></div>
+      <button class="btn primary" id="newCust">+ Yeni ölçü</button>
+    </div>
+    <div id="mstate"></div>
+    <div class="list" id="listWrap" hidden>
+      <table>
+        <thead><tr><th>Müşteri</th><th>Telefon</th><th>Pencere</th><th>Toplam en</th><th>Personel</th><th>Tarih</th><th>Durum</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- upload sheet -->
+<div class="sheet-bg" id="upSheet" hidden>
+  <form class="sheet" id="upForm">
+    <h2>Fotoğraf ekle</h2>
+    <p class="note" style="margin:0">Birden çok fotoğraf seçebilirsin. Hepsi aynı kategoriye eklenir. Fotoğraflar yüklenmeden önce küçültülür.</p>
+    <label>Fotoğraflar<input id="upFiles" type="file" accept="image/*" multiple required></label>
+    <div class="row">
+      <label>Kategori<select id="upCat"></select></label>
+      <label>Açıklama (isteğe bağlı)<input id="upNote" placeholder="Örn. Atakum, salon, keten tül + kadife fon"></label>
+    </div>
+    <div class="progress" id="upProg"></div>
+    <div class="err" id="upErr"></div>
+    <div class="actions">
+      <button class="btn primary" id="upGo" type="submit">Yükle</button>
+      <button class="btn" type="button" data-close>Vazgeç</button>
+    </div>
+  </form>
+</div>
+
+<!-- customer sheet -->
+<div class="sheet-bg" id="cSheet" hidden>
+  <form class="sheet" id="cForm">
+    <h2 id="cTitle">Yeni ölçü</h2>
+    <div class="row">
+      <label>Müşteri adı<input id="cName" required></label>
+      <label>Telefon<input id="cPhone" inputmode="tel"></label>
+    </div>
+    <label>Adres<input id="cAddr"></label>
+    <div class="row">
+      <label>Ölçü tarihi<input id="cDate" type="date"></label>
+      <label>Ölçüyü alan<input id="cStaff" list="staffList"></label>
+      <label>Durum<select id="cStat"></select></label>
+    </div>
+    <datalist id="staffList"><option value="İbrahim Göktan"><option value="Dilara Çabuk"></datalist>
+    <div class="win-head">
+      <h3>Pencereler</h3>
+      <span class="sum" id="cSum"></span>
+    </div>
+    <div class="wins" id="wins"></div>
+    <div><button class="btn" type="button" id="addWin">+ Pencere ekle</button></div>
+    <div class="win-head"><h3>Ölçü fotoğrafları</h3><span class="sum" id="cPhProg"></span></div>
+    <div class="cph" id="cPh"></div>
+    <label>Genel not<textarea id="cNote" placeholder="Seçilen kumaş, renk, korniş tipi, montaj günü…"></textarea></label>
+    <div class="err" id="cErr"></div>
+    <div class="actions">
+      <button class="btn primary" type="submit" id="cSave">Kaydet</button>
+      <button class="btn" type="button" data-close>Kapat</button>
+      <div class="spacer"></div>
+      <button class="btn danger" type="button" id="cDel" hidden>Sil</button>
+      <span id="cDelConfirm" hidden><span class="note">Silinsin mi?</span> <button class="btn danger solid" type="button" id="cDelYes">Evet, sil</button></span>
+    </div>
+  </form>
+</div>
+
+<!-- presenter -->
+<div class="lb" id="lb" hidden>
+  <div class="lb-top">
+    <div style="min-width:0"><div class="cat" id="lbCat"></div><div class="t" id="lbTitle"></div></div>
+    <div class="spacer"></div>
+    <span class="count" id="lbCount"></span>
+    <button class="lbtn" id="lbFull">Tam ekran</button>
+    <button class="lbtn" id="lbEdit" hidden>Düzenle</button>
+    <button class="lbtn del" id="lbDel" hidden>Sil</button>
+    <button class="lbtn del" id="lbDelYes" hidden>Evet, sil</button>
+    <button class="lbtn" id="lbClose">Kapat ✕</button>
+  </div>
+  <div class="lb-stage">
+    <img id="lbImg" alt="">
+    <button class="nav prev" id="lbPrev" aria-label="Önceki">‹</button>
+    <button class="nav next" id="lbNext" aria-label="Sonraki">›</button>
+  </div>
+  <div class="lb-bot"><div class="strip" id="strip"></div></div>
+</div>
+
+
+<!-- edit photo sheet -->
+<div class="sheet-bg" id="edSheet" hidden>
+  <form class="sheet" id="edForm">
+    <h2>Fotoğrafı düzenle</h2>
+    <img id="edImg" alt="" style="max-height:300px;object-fit:contain;border-radius:8px;background:var(--sunk)">
+    <div class="row">
+      <label>Kategori<select id="edCat"></select></label>
+      <label>Açıklama<input id="edNote"></label>
+    </div>
+    <div class="actions">
+      <button class="btn primary" type="submit">Kaydet</button>
+      <button class="btn" type="button" data-close>Vazgeç</button>
+    </div>
+  </form>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet-bg" id="setSheet" hidden>
+  <div class="sheet">
+    <h2>Ayarlar</h2>
+    <div>
+      <div class="note" style="text-transform:uppercase;letter-spacing:.04em;font-weight:600;font-size:12px">Veri klasörü</div>
+      <div id="dirPath" style="font-family:var(--f-num);font-size:13px;word-break:break-all;margin-top:4px"></div>
+    </div>
+    <p class="note" style="margin:0">Fotoğraflar ve ölçü kayıtları bu klasörde durur. İki bilgisayar aynı verileri görsün istiyorsan ortak bir klasör seç (ağ klasörü veya Google Drive / OneDrive klasörü). Boş bir klasör seçersen mevcut veriler oraya kopyalanır.</p>
+    <div class="actions">
+      <button class="btn primary" type="button" id="chooseDir">Klasör değiştir</button>
+      <button class="btn" type="button" id="openDir">Klasörü aç</button>
+      <button class="btn" type="button" data-close>Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "perde-vitrini",
+  "productName": "Perde Vitrini",
+  "version": "1.0.0",
+  "description": "Evteks perde bölümü: örnek iş galerisi ve müşteri ölçü kayıtları",
+  "main": "main.js",
+  "author": "Evteks Homeline",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.evteks.perdevitrini",
+    "productName": "Perde Vitrini",
+    "files": ["main.js", "preload.js", "renderer/**/*", "package.json"],
+    "extraResources": [{ "from": "seed", "to": "seed" }],
+    "win": { "target": "nsis", "icon": "build/icon.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Perde Vitrini"
+    }
+  }
+}
